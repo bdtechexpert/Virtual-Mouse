@@ -11,9 +11,9 @@
      CONFIGURATION
      ------------------------------------------ */
   var CONFIG = {
-    SPEED_SLOW: 2,
-    SPEED_NORMAL: 5,
-    SPEED_FAST: 12,
+    SPEED_SLOW: 1,
+    SPEED_NORMAL: 2,
+    SPEED_FAST: 4,
     SPEED_PRECISION_MULTIPLIER: 0.3,
     LONG_PRESS_START: 300,
     LONG_PRESS_MAX_ACCEL: 2.5,
@@ -26,8 +26,9 @@
     LERP_FACTOR: 0.45,
     HOVER_DEBOUNCE: 16,
     EASING_ACCEL_RAMP: 600,
-    EDGE_SCROLL_ZONE: 2,
-    EDGE_SCROLL_AMOUNT: 3,
+    EDGE_SCROLL_ZONE: 3,
+    EDGE_SCROLL_AMOUNT: 12,
+    CURSOR_AUTO_HIDE_DELAY: 5000,
     MIN_WIDTH: 650
   };
 
@@ -60,7 +61,9 @@
     rafId: null,
     lastFrameTime: 0,
     animating: false,
-    speedShowTimer: null
+    speedShowTimer: null,
+    cursorAutoShown: false,
+    cursorHideTimer: null
   };
 
   /* ------------------------------------------
@@ -195,6 +198,24 @@
   }
 
   /* ------------------------------------------
+     CURSOR AUTO-HIDE
+     ------------------------------------------ */
+  function showCursorAuto() {
+    state.cursorAutoShown = true;
+    if (cursorEl) cursorEl.classList.remove('vm-cursor-hidden');
+    clearTimeout(state.cursorHideTimer);
+    state.cursorHideTimer = setTimeout(hideCursorAuto, CONFIG.CURSOR_AUTO_HIDE_DELAY);
+  }
+
+  function hideCursorAuto() {
+    state.cursorAutoShown = false;
+    if (cursorEl) cursorEl.classList.add('vm-cursor-hidden');
+    if (hoverHighlight) hoverHighlight.classList.remove('vm-visible');
+    clearTimeout(state.cursorHideTimer);
+    state.cursorHideTimer = null;
+  }
+
+  /* ------------------------------------------
      HIT DETECTION
      ------------------------------------------ */
   function getTargetElement(x, y) {
@@ -227,6 +248,10 @@
      ------------------------------------------ */
   function updateHoverHighlight(el) {
     if (!hoverHighlight) return;
+    if (!state.cursorAutoShown) {
+      hoverHighlight.classList.remove('vm-visible');
+      return;
+    }
     if (!el || el === document.body || el === document.documentElement) {
       hoverHighlight.classList.remove('vm-visible');
       return;
@@ -585,6 +610,7 @@
       target.dispatchEvent(dragEvt);
     } catch(e) { /* silent */ }
 
+    showCursorAuto();
     if (hoverHighlight) hoverHighlight.classList.remove('vm-visible');
     updateModeIndicator();
   }
@@ -649,6 +675,7 @@
     state.dragTarget = null;
     state.dragDataTransfer = null;
 
+    showCursorAuto();
     updateModeIndicator();
     updateHoverHighlight(getTargetElement(state.x, state.y));
   }
@@ -718,6 +745,7 @@
         state.pressedKeys[key] = true;
         state.keyHoldStart[key] = now();
       }
+      showCursorAuto();
       return;
     }
 
@@ -756,6 +784,7 @@
 
     if (key === 'ContextMenu' || key === 'Menu') {
       e.preventDefault();
+      showCursorAuto();
       fireRightClickSequence(state.x, state.y);
       return;
     }
@@ -763,6 +792,7 @@
     if (key === 'MediaPlayPause' || key === ' ' && e.target === document.body) {
       e.preventDefault();
       state.scrollMode = !state.scrollMode;
+      showCursorAuto();
       updateModeIndicator();
       return;
     }
@@ -821,11 +851,13 @@
       }
 
       if (state.clickSequence === 1) {
+        showCursorAuto();
         fireFullClickSequence(state.x, state.y, 1);
         state.clickSequenceTimer = setTimeout(function() {
           state.clickSequence = 0;
         }, CONFIG.TRIPLE_CLICK_THRESHOLD);
       } else if (state.clickSequence === 2) {
+        showCursorAuto();
         fireDoubleClickSequence(state.x, state.y);
         state.clickSequenceTimer = setTimeout(function() {
           state.clickSequence = 0;
@@ -1096,7 +1128,6 @@
       if (state.enabled) return;
       state.enabled = true;
       state.visible = true;
-      if (cursorEl) cursorEl.classList.remove('vm-cursor-hidden');
       startAnimation();
       handleHover(Math.round(state.x), Math.round(state.y));
     },
@@ -1106,6 +1137,7 @@
       state.scrollMode = false;
       if (state.isDragging) endDrag();
       stopAnimation();
+      hideCursorAuto();
       updateModeIndicator();
     },
 
@@ -1118,12 +1150,12 @@
 
     show: function() {
       state.visible = true;
-      if (cursorEl) cursorEl.classList.remove('vm-cursor-hidden');
+      showCursorAuto();
     },
 
     hide: function() {
       state.visible = false;
-      if (cursorEl) cursorEl.classList.add('vm-cursor-hidden');
+      hideCursorAuto();
     },
 
     click: function() {
@@ -1218,6 +1250,9 @@
     createHoverHighlight();
     createModeIndicator();
     createSpeedIndicator();
+
+    /* Cursor starts hidden — shows only on arrow key press */
+    if (cursorEl) cursorEl.classList.add('vm-cursor-hidden');
 
     setupListeners();
 
