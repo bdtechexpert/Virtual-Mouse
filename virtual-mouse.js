@@ -1,7 +1,7 @@
 (function(){
   if(document.getElementById('vm-styles'))return;
   var s=document.createElement('style');s.id='vm-styles';
-  s.textContent='#vm-cursor{position:fixed;top:0;left:0;z-index:2147483647;pointer-events:none;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;will-change:transform;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.4));transition:none;display:block}#vm-cursor.vm-cursor-hidden{display:none}#vm-hover-highlight{position:fixed;z-index:2147483646;pointer-events:none;border:2px solid rgba(233,69,96,.6);background:rgba(233,69,96,.06);border-radius:3px;transition:top .06s linear,left .06s linear,width .06s linear,height .06s linear;display:none}#vm-hover-highlight.vm-visible{display:block}.vm-ripple{position:fixed;width:24px;height:24px;border-radius:50%;pointer-events:none;z-index:2147483646;animation:vm-ripple-anim .45s ease-out forwards}@keyframes vm-ripple-anim{0%{transform:translate(-50%,-50%) scale(.4);opacity:.8}100%{transform:translate(-50%,-50%) scale(2.5);opacity:0}}#vm-mode-indicator{position:fixed;top:12px;left:50%;transform:translateX(-50%);padding:6px 18px;border-radius:20px;font-size:.8rem;font-weight:700;z-index:2147483646;pointer-events:none;opacity:0;transition:opacity .2s ease;text-transform:uppercase;letter-spacing:.06em}#vm-mode-indicator.vm-active{opacity:1}#vm-mode-indicator.vm-scroll{background:rgba(16,185,129,.92);color:#fff}#vm-mode-indicator.vm-precision{background:rgba(139,92,246,.92);color:#fff}#vm-mode-indicator.vm-drag{background:rgba(239,68,68,.92);color:#fff}#vm-speed-indicator{position:fixed;bottom:12px;right:12px;padding:4px 10px;border-radius:6px;font-size:.7rem;font-weight:600;z-index:2147483646;pointer-events:none;background:rgba(26,26,46,.75);color:#fff;opacity:0;transition:opacity .3s ease}#vm-speed-indicator.vm-visible{opacity:1}#vm-cursor.vm-clicking svg path{fill:#e94560}@media(max-width:649px){#vm-cursor,#vm-hover-highlight,#vm-mode-indicator,#vm-speed-indicator,.vm-ripple{display:none!important;visibility:hidden!important;opacity:0!important}}';
+  s.textContent='html{scroll-behavior:auto!important}#vm-cursor{position:fixed;top:0;left:0;z-index:2147483647;pointer-events:none;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;will-change:transform;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.4));transition:none;display:block}#vm-cursor.vm-cursor-hidden{display:none}#vm-hover-highlight{position:fixed;z-index:2147483646;pointer-events:none;border:2px solid rgba(233,69,96,.6);background:rgba(233,69,96,.06);border-radius:3px;transition:top .06s linear,left .06s linear,width .06s linear,height .06s linear;display:none}#vm-hover-highlight.vm-visible{display:block}.vm-ripple{position:fixed;width:24px;height:24px;border-radius:50%;pointer-events:none;z-index:2147483646;animation:vm-ripple-anim .45s ease-out forwards}@keyframes vm-ripple-anim{0%{transform:translate(-50%,-50%) scale(.4);opacity:.8}100%{transform:translate(-50%,-50%) scale(2.5);opacity:0}}#vm-mode-indicator{position:fixed;top:12px;left:50%;transform:translateX(-50%);padding:6px 18px;border-radius:20px;font-size:.8rem;font-weight:700;z-index:2147483646;pointer-events:none;opacity:0;transition:opacity .2s ease;text-transform:uppercase;letter-spacing:.06em}#vm-mode-indicator.vm-active{opacity:1}#vm-mode-indicator.vm-scroll{background:rgba(16,185,129,.92);color:#fff}#vm-mode-indicator.vm-precision{background:rgba(139,92,246,.92);color:#fff}#vm-mode-indicator.vm-drag{background:rgba(239,68,68,.92);color:#fff}#vm-speed-indicator{position:fixed;bottom:12px;right:12px;padding:4px 10px;border-radius:6px;font-size:.7rem;font-weight:600;z-index:2147483646;pointer-events:none;background:rgba(26,26,46,.75);color:#fff;opacity:0;transition:opacity .3s ease}#vm-speed-indicator.vm-visible{opacity:1}#vm-cursor.vm-clicking svg path{fill:#e94560}@media(max-width:649px){#vm-cursor,#vm-hover-highlight,#vm-mode-indicator,#vm-speed-indicator,.vm-ripple{display:none!important;visibility:hidden!important;opacity:0!important}}';
   (document.head||document.documentElement).appendChild(s);
 })();
 (function() {
@@ -11,12 +11,12 @@
      CONFIGURATION
      ------------------------------------------ */
   var CONFIG = {
-    SPEED_SLOW: 1,
-    SPEED_NORMAL: 2,
-    SPEED_FAST: 4,
+    SPEED_SLOW: 0.5,
+    SPEED_NORMAL: 1,
+    SPEED_FAST: 2.5,
     SPEED_PRECISION_MULTIPLIER: 0.3,
     LONG_PRESS_START: 300,
-    LONG_PRESS_MAX_ACCEL: 2.5,
+    LONG_PRESS_MAX_ACCEL: 1.5,
     HOLD_THRESHOLD: 500,
     DOUBLE_CLICK_THRESHOLD: 350,
     TRIPLE_CLICK_THRESHOLD: 600,
