@@ -1,0 +1,17 @@
+ভার্চুয়াল মাউস ব্যবহারের জন্য আপনার ওয়েবসাইটে এই JS কোডটি যুক্ত করুন। এর ফলে টিভি রিমোট বা পিসি কিবোর্ডের কী (key) দিয়ে আপনার ওয়েবসাইটটি নিয়ন্ত্রণ করা যাবে।
+
+
+Add this JS code to your website to enable the use of a virtual mouse. This will allow your website to be controlled using a TV remote or PC keyboard keys.
+
+
+
+<script src="https://cdn.jsdelivr.net/gh/bdtechexpert/Virtual-Mouse@main/virtual-mouse.js"></script>
+
+
+
+
+
+or upload virtual-mouse.js file your hosting than add your website.
+
+
+<script src="https://yourdomain.com/virtual-mouse.js"></script>
