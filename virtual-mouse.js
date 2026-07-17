@@ -11,9 +11,9 @@
      CONFIGURATION
      ------------------------------------------ */
   var CONFIG = {
-    SPEED_SLOW: 4,
-    SPEED_NORMAL: 1,
-    SPEED_FAST: 24,
+    SPEED_SLOW: 2,
+    SPEED_NORMAL: 5,
+    SPEED_FAST: 12,
     SPEED_PRECISION_MULTIPLIER: 0.3,
     LONG_PRESS_START: 300,
     LONG_PRESS_MAX_ACCEL: 2.5,
@@ -27,7 +27,8 @@
     HOVER_DEBOUNCE: 16,
     EASING_ACCEL_RAMP: 600,
     EDGE_SCROLL_ZONE: 2,
-    EDGE_SCROLL_AMOUNT: 3
+    EDGE_SCROLL_AMOUNT: 3,
+    MIN_WIDTH: 650
   };
 
   /* ------------------------------------------
@@ -907,20 +908,22 @@
         var edgeZone = CONFIG.EDGE_SCROLL_ZONE;
 
         /* Edge scrolling: when cursor is at the viewport boundary,
-           continue pressing the arrow to scroll the page */
+           scroll the nearest scrollable container (sidebar, menu, or page) */
+        var scrollAmt = CONFIG.EDGE_SCROLL_AMOUNT * dt * baseSpeed;
+
         if (dy < 0 && newY <= edgeZone && state.y <= edgeZone) {
-          window.scrollBy({top: -CONFIG.EDGE_SCROLL_AMOUNT * dt * baseSpeed, behavior: 'instant'});
+          scrollContainer(state.x, state.y, 0, -scrollAmt);
           newY = edgeZone;
         } else if (dy > 0 && newY >= vh - 1 - edgeZone && state.y >= vh - 1 - edgeZone) {
-          window.scrollBy({top: CONFIG.EDGE_SCROLL_AMOUNT * dt * baseSpeed, behavior: 'instant'});
+          scrollContainer(state.x, state.y, 0, scrollAmt);
           newY = vh - 1 - edgeZone;
         }
 
         if (dx < 0 && newX <= edgeZone && state.x <= edgeZone) {
-          window.scrollBy({left: -CONFIG.EDGE_SCROLL_AMOUNT * dt * baseSpeed, behavior: 'instant'});
+          scrollContainer(state.x, state.y, -scrollAmt, 0);
           newX = edgeZone;
         } else if (dx > 0 && newX >= vw - 1 - edgeZone && state.x >= vw - 1 - edgeZone) {
-          window.scrollBy({left: CONFIG.EDGE_SCROLL_AMOUNT * dt * baseSpeed, behavior: 'instant'});
+          scrollContainer(state.x, state.y, scrollAmt, 0);
           newX = vw - 1 - edgeZone;
         }
 
@@ -986,9 +989,76 @@
   }
 
   /* ------------------------------------------
+     NESTED SCROLLABLE CONTAINER DETECTION
+     ------------------------------------------ */
+  function isScrollable(el) {
+    if (!el || el === document.documentElement || el === document.body) return false;
+    var cs = getComputedStyle(el);
+    var oy = cs.overflowY;
+    var ox = cs.overflowX;
+    if (oy !== 'auto' && oy !== 'scroll' && oy !== 'overlay') {
+      if (ox !== 'auto' && ox !== 'scroll' && ox !== 'overlay') return false;
+    }
+    return el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth;
+  }
+
+  function scrollContainer(cx, cy, dx, dy) {
+    /* Offset the hit-test point inward from the viewport edge
+       so we detect elements that end just before the edge (e.g. sidebars) */
+    var vh = getViewportHeight();
+    var vw = getViewportWidth();
+    var probeY = cy;
+    var probeX = cx;
+    if (dy < 0 && cy <= 10) probeY = 15;
+    if (dy > 0 && cy >= vh - 10) probeY = vh - 20;
+    if (dx < 0 && cx <= 10) probeX = 15;
+    if (dx > 0 && cx >= vw - 10) probeX = vw - 20;
+
+    var target = document.elementFromPoint(probeX, probeY);
+    if (!target) { window.scrollBy({top: dy, left: dx, behavior: 'instant'}); return; }
+
+    /* Walk up from the target to find the innermost scrollable ancestor */
+    var el = target;
+    while (el && el !== document.documentElement && el !== document.body) {
+      if (isScrollable(el)) {
+        if (dy !== 0) {
+          var canScrollY = false;
+          if (dy < 0 && el.scrollTop > 0) canScrollY = true;
+          if (dy > 0 && el.scrollTop < el.scrollHeight - el.clientHeight) canScrollY = true;
+          if (canScrollY) { el.scrollTop += dy; return; }
+        }
+        if (dx !== 0) {
+          var canScrollX = false;
+          if (dx < 0 && el.scrollLeft > 0) canScrollX = true;
+          if (dx > 0 && el.scrollLeft < el.scrollWidth - el.clientWidth) canScrollX = true;
+          if (canScrollX) { el.scrollLeft += dx; return; }
+        }
+      }
+      el = el.parentElement;
+    }
+
+    /* No inner scrollable container could scroll — fall back to window */
+    window.scrollBy({top: dy, left: dx, behavior: 'instant'});
+  }
+
+  /* ------------------------------------------
+     MOBILE WIDTH CHECK
+     ------------------------------------------ */
+  function checkMinWidth() {
+    var wide = getViewportWidth() >= CONFIG.MIN_WIDTH;
+    if (wide && !state.enabled) {
+      VirtualMouse.enable();
+    } else if (!wide && state.enabled) {
+      VirtualMouse.disable();
+      VirtualMouse.hide();
+    }
+  }
+
+  /* ------------------------------------------
      WINDOW HANDLERS
      ------------------------------------------ */
   function handleResize() {
+    checkMinWidth();
     state.x = clamp(state.x, 0, getViewportWidth() - 1);
     state.y = clamp(state.y, 0, getViewportHeight() - 1);
     state.displayX = state.x;
@@ -1088,6 +1158,15 @@
      INITIALIZATION
      ------------------------------------------ */
   function init() {
+    /* On narrow screens (mobile), do not activate */
+    if (getViewportWidth() < CONFIG.MIN_WIDTH) {
+      window.VirtualMouse = VirtualMouse;
+      window.addEventListener('resize', function() {
+        if (getViewportWidth() >= CONFIG.MIN_WIDTH) init();
+      });
+      return;
+    }
+
     createCursor();
     createHoverHighlight();
     createModeIndicator();
