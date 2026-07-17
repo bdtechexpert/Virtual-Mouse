@@ -12,7 +12,7 @@
      ------------------------------------------ */
   var CONFIG = {
     SPEED_SLOW: 2,
-    SPEED_NORMAL: 5,
+    SPEED_NORMAL: 0.5,
     SPEED_FAST: 12,
     SPEED_PRECISION_MULTIPLIER: 0.3,
     LONG_PRESS_START: 300,
