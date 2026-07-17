@@ -1,7 +1,7 @@
 (function(){
   if(document.getElementById('vm-styles'))return;
   var s=document.createElement('style');s.id='vm-styles';
-  s.textContent='#vm-cursor{position:fixed;top:0;left:0;z-index:2147483647;pointer-events:none;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;will-change:transform;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.4));transition:none;display:block}#vm-cursor.vm-cursor-hidden{display:none}#vm-hover-highlight{position:fixed;z-index:2147483646;pointer-events:none;border:2px solid rgba(233,69,96,.6);background:rgba(233,69,96,.06);border-radius:3px;transition:top .06s linear,left .06s linear,width .06s linear,height .06s linear;display:none}#vm-hover-highlight.vm-visible{display:block}.vm-ripple{position:fixed;width:24px;height:24px;border-radius:50%;pointer-events:none;z-index:2147483646;animation:vm-ripple-anim .45s ease-out forwards}@keyframes vm-ripple-anim{0%{transform:translate(-50%,-50%) scale(.4);opacity:.8}100%{transform:translate(-50%,-50%) scale(2.5);opacity:0}}#vm-mode-indicator{position:fixed;top:12px;left:50%;transform:translateX(-50%);padding:6px 18px;border-radius:20px;font-size:.8rem;font-weight:700;z-index:2147483646;pointer-events:none;opacity:0;transition:opacity .2s ease;text-transform:uppercase;letter-spacing:.06em}#vm-mode-indicator.vm-active{opacity:1}#vm-mode-indicator.vm-scroll{background:rgba(16,185,129,.92);color:#fff}#vm-mode-indicator.vm-precision{background:rgba(139,92,246,.92);color:#fff}#vm-mode-indicator.vm-drag{background:rgba(239,68,68,.92);color:#fff}#vm-speed-indicator{position:fixed;bottom:12px;right:12px;padding:4px 10px;border-radius:6px;font-size:.7rem;font-weight:600;z-index:2147483646;pointer-events:none;background:rgba(26,26,46,.75);color:#fff;opacity:0;transition:opacity .3s ease}#vm-speed-indicator.vm-visible{opacity:1}#vm-cursor.vm-clicking svg path{fill:#e94560}';
+  s.textContent='#vm-cursor{position:fixed;top:0;left:0;z-index:2147483647;pointer-events:none;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;will-change:transform;filter:drop-shadow(1px 2px 2px rgba(0,0,0,.4));transition:none;display:block}#vm-cursor.vm-cursor-hidden{display:none}#vm-hover-highlight{position:fixed;z-index:2147483646;pointer-events:none;border:2px solid rgba(233,69,96,.6);background:rgba(233,69,96,.06);border-radius:3px;transition:top .06s linear,left .06s linear,width .06s linear,height .06s linear;display:none}#vm-hover-highlight.vm-visible{display:block}.vm-ripple{position:fixed;width:24px;height:24px;border-radius:50%;pointer-events:none;z-index:2147483646;animation:vm-ripple-anim .45s ease-out forwards}@keyframes vm-ripple-anim{0%{transform:translate(-50%,-50%) scale(.4);opacity:.8}100%{transform:translate(-50%,-50%) scale(2.5);opacity:0}}#vm-mode-indicator{position:fixed;top:12px;left:50%;transform:translateX(-50%);padding:6px 18px;border-radius:20px;font-size:.8rem;font-weight:700;z-index:2147483646;pointer-events:none;opacity:0;transition:opacity .2s ease;text-transform:uppercase;letter-spacing:.06em}#vm-mode-indicator.vm-active{opacity:1}#vm-mode-indicator.vm-scroll{background:rgba(16,185,129,.92);color:#fff}#vm-mode-indicator.vm-precision{background:rgba(139,92,246,.92);color:#fff}#vm-mode-indicator.vm-drag{background:rgba(239,68,68,.92);color:#fff}#vm-speed-indicator{position:fixed;bottom:12px;right:12px;padding:4px 10px;border-radius:6px;font-size:.7rem;font-weight:600;z-index:2147483646;pointer-events:none;background:rgba(26,26,46,.75);color:#fff;opacity:0;transition:opacity .3s ease}#vm-speed-indicator.vm-visible{opacity:1}#vm-cursor.vm-clicking svg path{fill:#e94560}@media(max-width:649px){#vm-cursor,#vm-hover-highlight,#vm-mode-indicator,#vm-speed-indicator,.vm-ripple{display:none!important;visibility:hidden!important;opacity:0!important}}';
   (document.head||document.documentElement).appendChild(s);
 })();
 (function() {
@@ -12,7 +12,7 @@
      ------------------------------------------ */
   var CONFIG = {
     SPEED_SLOW: 2,
-    SPEED_NORMAL: 0.5,
+    SPEED_NORMAL: 5,
     SPEED_FAST: 12,
     SPEED_PRECISION_MULTIPLIER: 0.3,
     LONG_PRESS_START: 300,
@@ -86,9 +86,7 @@
   function getBaseSpeed() {
     var speeds = { slow: CONFIG.SPEED_SLOW, normal: CONFIG.SPEED_NORMAL, fast: CONFIG.SPEED_FAST };
     var base = speeds[state.speed] || CONFIG.SPEED_NORMAL;
-    if (state.precisionMode) {
-      base = base * CONFIG.SPEED_PRECISION_MULTIPLIER;
-    }
+    base = base * CONFIG.SPEED_PRECISION_MULTIPLIER;
     return base;
   }
 
@@ -996,48 +994,71 @@
     var cs = getComputedStyle(el);
     var oy = cs.overflowY;
     var ox = cs.overflowX;
-    if (oy !== 'auto' && oy !== 'scroll' && oy !== 'overlay') {
-      if (ox !== 'auto' && ox !== 'scroll' && ox !== 'overlay') return false;
-    }
+    var scrollOY = (oy === 'auto' || oy === 'scroll' || oy === 'overlay' || oy === 'hidden');
+    var scrollOX = (ox === 'auto' || ox === 'scroll' || ox === 'overlay' || ox === 'hidden');
+    if (!scrollOY && !scrollOX) return false;
     return el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth;
   }
 
   function scrollContainer(cx, cy, dx, dy) {
-    /* Offset the hit-test point inward from the viewport edge
-       so we detect elements that end just before the edge (e.g. sidebars) */
     var vh = getViewportHeight();
     var vw = getViewportWidth();
-    var probeY = cy;
-    var probeX = cx;
-    if (dy < 0 && cy <= 10) probeY = 15;
-    if (dy > 0 && cy >= vh - 10) probeY = vh - 20;
-    if (dx < 0 && cx <= 10) probeX = 15;
-    if (dx > 0 && cx >= vw - 10) probeX = vw - 20;
 
-    var target = document.elementFromPoint(probeX, probeY);
-    if (!target) { window.scrollBy({top: dy, left: dx, behavior: 'instant'}); return; }
-
-    /* Walk up from the target to find the innermost scrollable ancestor */
-    var el = target;
-    while (el && el !== document.documentElement && el !== document.body) {
-      if (isScrollable(el)) {
-        if (dy !== 0) {
-          var canScrollY = false;
-          if (dy < 0 && el.scrollTop > 0) canScrollY = true;
-          if (dy > 0 && el.scrollTop < el.scrollHeight - el.clientHeight) canScrollY = true;
-          if (canScrollY) { el.scrollTop += dy; return; }
-        }
-        if (dx !== 0) {
-          var canScrollX = false;
-          if (dx < 0 && el.scrollLeft > 0) canScrollX = true;
-          if (dx > 0 && el.scrollLeft < el.scrollWidth - el.clientWidth) canScrollX = true;
-          if (canScrollX) { el.scrollLeft += dx; return; }
-        }
-      }
-      el = el.parentElement;
+    /* Try multiple probe points: cursor position first, then progressively
+       inward from the viewport edge to reach elements inside sidebars/menus */
+    var probePoints = [[cx, cy]];
+    if (dy < 0 && cy <= 20) {
+      probePoints.push([cx, 30], [cx, 70], [cx, 120], [cx, 180], [cx, 250]);
+    } else if (dy > 0 && cy >= vh - 20) {
+      probePoints.push([cx, vh - 30], [cx, vh - 70], [cx, vh - 120], [cx, vh - 180], [cx, vh - 250]);
+    }
+    if (dx < 0 && cx <= 20) {
+      probePoints.push([30, cy], [70, cy], [120, cy], [180, cy], [250, cy]);
+    } else if (dx > 0 && cx >= vw - 20) {
+      probePoints.push([vw - 30, cy], [vw - 70, cy], [vw - 120, cy], [vw - 180, cy], [vw - 250, cy]);
     }
 
-    /* No inner scrollable container could scroll — fall back to window */
+    var scrolled = false;
+    for (var p = 0; p < probePoints.length; p++) {
+      var px = probePoints[p][0];
+      var py = probePoints[p][1];
+      if (px < 0 || py < 0 || px >= vw || py >= vh) continue;
+      var target = document.elementFromPoint(px, py);
+      if (!target) continue;
+
+      /* Walk up from the target to find the innermost scrollable ancestor */
+      var el = target;
+      while (el && el !== document.documentElement && el !== document.body) {
+        if (isScrollable(el)) {
+          if (dy !== 0) {
+            if ((dy < 0 && el.scrollTop > 0) || (dy > 0 && el.scrollTop < el.scrollHeight - el.clientHeight)) {
+              el.scrollTop += dy;
+              scrolled = true;
+              break;
+            }
+          }
+          if (dx !== 0) {
+            if ((dx < 0 && el.scrollLeft > 0) || (dx > 0 && el.scrollLeft < el.scrollWidth - el.clientWidth)) {
+              el.scrollLeft += dx;
+              scrolled = true;
+              break;
+            }
+          }
+        }
+        el = el.parentElement;
+      }
+      if (scrolled) return;
+    }
+
+    /* No native scrollable element found — try wheel event on the element
+       under the cursor for JS-based sliders/carousels */
+    var wheelTarget = document.elementFromPoint(cx, cy);
+    if (wheelTarget && wheelTarget !== document.body && wheelTarget !== document.documentElement) {
+      dispatchWheelEvent(wheelTarget, cx, cy, dx * 12, dy * 12);
+      return;
+    }
+
+    /* Fall back to window scroll */
     window.scrollBy({top: dy, left: dx, behavior: 'instant'});
   }
 
@@ -1155,27 +1176,16 @@
   };
 
   /* ------------------------------------------
-     INITIALIZATION
+     EVENT LISTENER SETUP (guarded — runs once)
      ------------------------------------------ */
-  function init() {
-    /* On narrow screens (mobile), do not activate */
-    if (getViewportWidth() < CONFIG.MIN_WIDTH) {
-      window.VirtualMouse = VirtualMouse;
-      window.addEventListener('resize', function() {
-        if (getViewportWidth() >= CONFIG.MIN_WIDTH) init();
-      });
-      return;
-    }
+  var _listenersReady = false;
 
-    createCursor();
-    createHoverHighlight();
-    createModeIndicator();
-    createSpeedIndicator();
-
+  function setupListeners() {
+    if (_listenersReady) return;
+    _listenersReady = true;
     document.addEventListener('keydown', handleKeyDown, true);
     document.addEventListener('keyup', handleKeyUp, true);
     window.addEventListener('resize', handleResize, false);
-
     try {
       if (screen.orientation) {
         screen.orientation.addEventListener('change', handleResize);
@@ -1185,14 +1195,31 @@
     } catch(e) {
       window.addEventListener('orientationchange', handleResize, false);
     }
-
     document.addEventListener('fullscreenchange', function() {
       setTimeout(handleResize, 100);
     }, false);
-
     document.addEventListener('webkitfullscreenchange', function() {
       setTimeout(handleResize, 100);
     }, false);
+  }
+
+  /* ------------------------------------------
+     INITIALIZATION
+     ------------------------------------------ */
+  function init() {
+    /* On narrow screens (mobile), do not activate */
+    if (getViewportWidth() < CONFIG.MIN_WIDTH) {
+      window.VirtualMouse = VirtualMouse;
+      setupListeners();
+      return;
+    }
+
+    createCursor();
+    createHoverHighlight();
+    createModeIndicator();
+    createSpeedIndicator();
+
+    setupListeners();
 
     setupMutationObserver();
     startAnimation();
