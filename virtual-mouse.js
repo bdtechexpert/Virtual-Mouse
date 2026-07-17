@@ -12,7 +12,7 @@
      ------------------------------------------ */
   var CONFIG = {
     SPEED_SLOW: 1.5,
-    SPEED_NORMAL: 2.5,
+    SPEED_NORMAL: 3.5,
     SPEED_FAST: 5,
     SPEED_PRECISION_MULTIPLIER: 1.00,
     LONG_PRESS_START: 300,
@@ -1316,9 +1316,17 @@
 
     setupListeners();
 
+    /* Start cursor at center of screen */
+    var vw = getViewportWidth();
+    var vh = getViewportHeight();
+    state.x = Math.round(vw / 2);
+    state.y = Math.round(vh / 2);
+    state.displayX = state.x;
+    state.displayY = state.y;
+
     setupMutationObserver();
     startAnimation();
-    handleHover(Math.round(state.x), Math.round(state.y));
+    handleHover(state.x, state.y);
 
     window.VirtualMouse = VirtualMouse;
   }
